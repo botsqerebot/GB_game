@@ -8,6 +8,7 @@ section "Header", ROM0[$100]
 
 EntryPoint:
     ;Dont turn off lcd outside of VBlank
+
 WaitVBlank:
     ld a, [rLY]
     cp 144
@@ -21,6 +22,7 @@ WaitVBlank:
     ld de, Tiles
     ld hl, $9000
     ld bc, TilesEnd - Tiles
+
 CopyTiles:
     ld a, [de]
     ld [hli], a
@@ -34,6 +36,7 @@ CopyTiles:
     ld de, Tilemap
     ld hl, $9800
     ld bc, TilemapEnd - Tilemap
+
 CopyTilemap:
     ld a, [de]
     ld [hli], a
@@ -51,8 +54,80 @@ CopyTilemap:
     ld a, %11100100
     ld [rBGP], a
 
-Done:
-    jp Done
+
+	ld a, 0
+	ld b, 160
+	ld hl, _OAMRAM
+
+ClearOAM:
+	ld [hli], a
+	dec b
+	jp nz, ClearOAM
+
+	ld hl, _OAMRAM
+	ld a, 128 + 16
+	ld [hli], a
+	ld a, 16 + 8
+	ld [hli], a
+	ld a, 0
+	ld [hli], a
+	ld [hli], a
+
+
+	; Copy paddle tile
+	ld de, Paddle
+	ld hl, $8000
+	ld bc, PaddleEnd - Paddle
+
+CopyPaddle:
+	ld a, [de]
+	ld [hli], a
+	inc de
+	dec bc
+	ld a, b
+	ld a, c 
+	jp nz, CopyPaddle
+
+
+	;Initilize global variables
+	ld a, 0
+	ld [wFrameCounter], a
+Main:
+    ;wait untill its not vblank
+	ld a, [rLY]
+	cp 144
+	jp nc, Main
+WaitVBlank2:
+	ld a, [rLY]
+	cp 144
+	jp c, WaitVBlank2
+
+	ld a, [wFrameCounter]
+	inc a
+	ld [wFrameCounter], a
+	cp a, 15 ;for every 15 seconds run the code under
+	jp nz, Main
+
+	;reset the wFrameCounter to 0
+	ld a, 0
+	ld [wFrameCounter], a
+
+	;Move the paddle 1 pixel to the right
+	ld a, [_OAMRAM + 1]
+	inc a
+	ld [_OAMRAM + 1], a
+	jp Main
+
+Paddle:
+    dw `13333331
+    dw `30000003
+    dw `13333331
+    dw `00000000
+    dw `00000000
+    dw `00000000
+    dw `00000000
+    dw `00000000
+PaddleEnd:
 
 Tiles:
 	dw `33333333
@@ -287,3 +362,6 @@ Tilemap:
 	db $04, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $08, $07, $03, $16, $17, $18, $19, $03, 0,0,0,0,0,0,0,0,0,0,0,0
 	db $04, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $07, $03, $03, $03, $03, $03, $03, 0,0,0,0,0,0,0,0,0,0,0,0
 TilemapEnd:
+
+section "Counter", WRAM0
+wFrameCounter: db
