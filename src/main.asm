@@ -8,7 +8,6 @@ section "Header", ROM0[$100]
 
 EntryPoint:
     ;Dont turn off lcd outside of VBlank
-
 WaitVBlank:
     ld a, [rLY]
     cp 144
@@ -22,43 +21,23 @@ WaitVBlank:
     ld de, Tiles
     ld hl, $9000
     ld bc, TilesEnd - Tiles
-
-CopyTiles:
-    ld a, [de]
-    ld [hli], a
-    inc de
-    dec bc
-    ld a, b
-    or a, c
-    jp nz, CopyTiles
+	call Memcopy
 
     ;copy tilemap
     ld de, Tilemap
     ld hl, $9800
     ld bc, TilemapEnd - Tilemap
+	call Memcopy
 
-CopyTilemap:
-    ld a, [de]
-    ld [hli], a
-    inc de
-    dec bc
-    ld a, b
-    or a, c
-    jp nz, CopyTilemap
-
-    ; turn the sccreen back on 0
-    ld a, LCDCF_ON | LCDCF_BGON
-    ld [rLCDC], a
-
-    ;during the first (blank) frame, initilize display registers
-    ld a, %11100100
-    ld [rBGP], a
-
+	; Copy paddle tile
+	ld de, Paddle
+	ld hl, $8000
+	ld bc, PaddleEnd - Paddle
+	call Memcopy
 
 	ld a, 0
 	ld b, 160
 	ld hl, _OAMRAM
-
 ClearOAM:
 	ld [hli], a
 	dec b
@@ -73,30 +52,27 @@ ClearOAM:
 	ld [hli], a
 	ld [hli], a
 
+    ; turn the sccreen back on 
+    ld a, LCDCF_ON | LCDCF_BGON | LCDCF_OBJON
+    ld [rLCDC], a
 
-	; Copy paddle tile
-	ld de, Paddle
-	ld hl, $8000
-	ld bc, PaddleEnd - Paddle
-
-CopyPaddle:
-	ld a, [de]
-	ld [hli], a
-	inc de
-	dec bc
-	ld a, b
-	ld a, c 
-	jp nz, CopyPaddle
-
+    ;during the first (blank) frame, initilize display registers
+    ld a, %11100100
+    ld [rBGP], a
+	ld a, %11100100
+	ld [rOBP0], a
 
 	;Initilize global variables
 	ld a, 0
 	ld [wFrameCounter], a
+
 Main:
     ;wait untill its not vblank
 	ld a, [rLY]
 	cp 144
 	jp nc, Main
+
+
 WaitVBlank2:
 	ld a, [rLY]
 	cp 144
@@ -117,6 +93,21 @@ WaitVBlank2:
 	inc a
 	ld [_OAMRAM + 1], a
 	jp Main
+
+;copy bytes from one area to another
+;@param de: source
+;@param hl: Destination
+;param bc: Lenght
+Memcopy:
+	ld a, [de]
+	ld [hli], a
+	inc de
+	dec bc
+	ld a, b
+	or a, c
+	jp nz, Memcopy
+	ret
+
 
 Paddle:
     dw `13333331
