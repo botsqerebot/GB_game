@@ -1,7 +1,7 @@
 # GB_game
  I am trying to follow a tutorial on how to make a gameboy game
 
-#To make the game runnable on windows:
+## To make the game runnable on windows:
 
 '''bash
 rgbasm -o build/main.o src/main.asm
