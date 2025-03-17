@@ -35,6 +35,12 @@ WaitVBlank:
 	ld bc, PaddleEnd - Paddle
 	call Memcopy
 
+	;copy the ball
+	ld de, Ball
+	ld hl, $8010
+	ld bc, BallEnd - Ball
+	call Memcopy
+
 	ld a, 0
 	ld b, 160
 	ld hl, _OAMRAM
@@ -43,6 +49,7 @@ ClearOAM:
 	dec b
 	jp nz, ClearOAM
 
+	;Initilize the padde sprite in OAM
 	ld hl, _OAMRAM
 	ld a, 128 + 16
 	ld [hli], a
@@ -51,6 +58,21 @@ ClearOAM:
 	ld a, 0
 	ld [hli], a
 	ld [hli], a
+	;Initilize the ball sprite
+	ld a, 100 + 16
+	ld [hli], a
+	ld a, 32 + 8
+	ld [hli], a
+	ld a, 1
+	ld [hli], a
+	ld a, 0
+	ld [hli], a
+
+	;the ball starts to go up and left
+	ld a, 1
+	ld [wBallMomentumX], a
+	ld a, -1
+	ld [wBallMomentumY], a
 
     ; turn the sccreen back on 
     ld a, LCDCF_ON | LCDCF_BGON | LCDCF_OBJON
@@ -78,10 +100,102 @@ WaitVBlank2:
 	cp 144
 	jp c, WaitVBlank2
 
+	;Add the balls momentum to the oam
+	ld a, [wBallMomentumX]
+	ld b, a
+	ld a, [_OAMRAM + 5]
+	add a, b
+	ld [_OAMRAM + 5], a
+
+	ld a, [wBallMomentumY]
+	ld b, a
+	ld a, [_OAMRAM + 4]
+	add a, b
+	ld [_OAMRAM + 4], a
+
 	;check the current keys pressed every frame and move left or right
 	call UpdateKeys
 
 	;first check if the left button is pressed
+BounceOnBall:
+	; Offset the OAM position
+	; (8, 16) is (0, 0) in OAM coordinates on the screen
+	ld a, [_OAMRAM + 4]
+	sub a, 16 + 1
+	ld c, a
+	ld a, [_OAMRAM + 5]
+	sub a, 8
+	ld b, a
+	call GetTileByPixel ;returns the address in hl
+	ld a, [hl]
+	call IsWallTile
+	jp nz, BounceOnRight
+	ld a, 1
+	ld [wBallMomentumY], a
+BounceOnRight:
+	ld a, [_OAMRAM + 4]
+	sub a, 16
+	ld c, a
+	ld a, [_OAMRAM + 5]
+	sub a, 8 - 1
+	ld b, a
+	call GetTileByPixel
+	ld a, [hl]
+	call IsWallTile
+	jp nz, BounceOnLeft
+	ld a, -1
+	ld [wBallMomentumX], a
+BounceOnLeft:
+	ld a, [_OAMRAM + 4]
+	sub a, 16
+	ld c, a
+	ld a, [_OAMRAM + 5]
+	sub a, 8 + 1
+	ld b, a
+	call GetTileByPixel
+	ld a, [hl]
+	call IsWallTile
+	jp nz, BounceOnBottom
+	ld a, 1
+	ld [wBallMomentumX], a
+BounceOnBottom:
+	ld a, [_OAMRAM + 4]
+	sub a, 16 - 1
+	ld c, a
+	ld a, [_OAMRAM + 5]
+	sub a, 8
+	ld b, a
+	call GetTileByPixel
+	ld a, [hl]
+	call IsWallTile
+	jp nz, BounceDone
+	ld a, -1
+	ld [wBallMomentumX], a
+BounceDone:
+
+	;First check if the ball is low enough to hit the paddle
+	ld a, [_OAMRAM]
+	ld b, a
+	ld a, [_OAMRAM + 4]
+	cp a, b
+	jp nz, PaddleBounceDone ; If the ball isnt at the same y position as the paddle
+	;Compare the x position to check if they are touching
+	ld a, [_OAMRAM + 5] ; balls x position
+	ld b, a
+	ld a, [_OAMRAM + 1] ; paddles position
+	sub a, 8
+	cp a, b
+	jp nc, PaddleBounceDone
+	add a, 8 + 16 ; 8 to undo, 16 as the with
+	cp a, b
+	jp c, PaddleBounceDone
+
+	ld a, -1
+	ld [wBallMomentumY], a
+
+PaddleBounceDone:
+
+
 CheckLeft:
 	ld a, [wCurKeys]
 	and a, PADF_LEFT
@@ -120,7 +234,7 @@ Memcopy:
 	ld [hli], a
 	inc de
 	dec bc
-	ld a, b
+	ld a, b	
 	or a, c
 	jp nz, Memcopy
 	ret
@@ -160,6 +274,57 @@ UpdateKeys:
 	or a, $F0 ;A7-4 = 1; A3-0 = unpressed keys
 .knownret
 	ret
+
+; COnvert a pixel to a tilemap position
+; hl = $9800 + X + Y * 32
+;@param b: X
+;@param c: Y
+;@return hl: tile address
+GetTileByPixel:
+	;first divide by 8 to convert a pixel position to a tile position
+	;after we want to multiply by 32 on the Y
+	;these opperation cancel out so we only need to mask the Y value
+	ld a, c
+	and a, %11111000
+	ld l, a
+	ld h, 0
+	;now we have the position * 8 in hl
+	add hl, hl ; position * 16
+	add hl, hl ; position * 32
+	;convert x position to an offset
+	ld a, b
+	srl a ;a / 2
+	srl a ; a / 4
+	srl a ; a / 8
+	;add the offsets together
+	add a, l
+	ld l, a
+	adc a, h
+	sub a, l
+	ld h, a
+	;add the offset ti the tilemap´s base address
+	ld bc, $9800
+	add hl, bc
+	ret
+
+;@param a: tile ID
+;@return z: set if a is wall
+IsWallTile:
+	cp a, $00
+	ret z
+	cp a, $01
+	ret z
+	cp a, $02
+	ret z
+	cp a, $04
+	ret z
+	cp a, $05
+	ret z
+	cp a, $06
+	ret z
+	cp a, $07
+	ret
+
 
 
 Paddle:
@@ -407,9 +572,25 @@ Tilemap:
 	db $04, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $09, $07, $03, $03, $03, $03, $03, $03, 0,0,0,0,0,0,0,0,0,0,0,0
 TilemapEnd:
 
+Ball:
+    dw `00033000
+    dw `00322300
+    dw `03222230
+    dw `03222230
+    dw `00322300
+    dw `00033000
+    dw `00000000
+    dw `00000000
+BallEnd:
+
+
 section "Counter", WRAM0
 wFrameCounter: db
 
 section "Input variables", WRAM0
 wCurKeys: db
 wNewKeys: db
+
+section "Ball Data", WRAM0
+wBallMomentumX: db
+wBallMomentumY: db
