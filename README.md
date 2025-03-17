@@ -9,4 +9,4 @@ rgblink -o build/main.gb build/main.o
 rgbfix -v -p 0xFF build/main.gb
 ```
 
-# If you are on mac you will need mamefile installed and just type make in the terminal
+If you are on mac you will need make installed and just type make in the terminal
