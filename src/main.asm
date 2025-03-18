@@ -177,6 +177,7 @@ BounceDone:
 	ld a, [_OAMRAM]
 	ld b, a
 	ld a, [_OAMRAM + 4]
+	add a, 4
 	cp a, b
 	jp nz, PaddleBounceDone ; If the ball isnt at the same y position as the paddle
 	;Compare the x position to check if they are touching
