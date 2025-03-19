@@ -4,6 +4,17 @@ DEF BRICK_LEFT EQU $05
 DEF BRICK_RIGHT EQU $06
 DEF BLANK_TILE EQU $08
 
+section "Counter", WRAM0
+wFrameCounter: db
+
+section "Input variables", WRAM0
+wCurKeys: db
+wNewKeys: db
+
+section "Ball Data", WRAM0
+wBallMomentumX: db
+wBallMomentumY: db
+
 section "Header", ROM0[$100]
 
     jp EntryPoint
@@ -612,13 +623,3 @@ Ball:
 BallEnd:
 
 
-section "Counter", WRAM0
-wFrameCounter: db
-
-section "Input variables", WRAM0
-wCurKeys: db
-wNewKeys: db
-
-section "Ball Data", WRAM0
-wBallMomentumX: db
-wBallMomentumY: db
