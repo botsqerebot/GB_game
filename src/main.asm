@@ -15,6 +15,9 @@ section "Ball Data", WRAM0
 wBallMomentumX: db
 wBallMomentumY: db
 
+section "GameState", WRAM0
+wGameState:: db
+
 section "Header", ROM0[$100]
 
     jp EntryPoint
