@@ -1,19 +1,29 @@
-PROJECT := mygame
-SRC := src/main.asm
-OBJ := build/main.o
-ROM := build/$(PROJECT).gb
+# Makefile for GB_game project
 
-all: $(ROM)
+ASMDIR := src
+BUILDDIR := build
+OUTPUT := $(BUILDDIR)/game.gb 
+OBJ := $(BUILDDIR)/main.o
 
-$(ROM): $(OBJ)
-	rgblink -o $(ROM) $(OBJ)
-	rgbfix -v -p 0 $(ROM)
-	mgba $(ROM)
+# Source files
+SOURCES = $(ASMDIR)/main.asm \
+           $(ASMDIR)/include/hardware.inc \
+           $(ASMDIR)/utils/memcopy.asm \
+           $(ASMDIR)/utils/input.asm \
 
-build/main.o: $(SRC)
-	mkdir -p build
-	rgbasm -o $(OBJ) $(SRC)
 
+# Build rules
+all: $(OUTPUT)
+
+$(OUTPUT): $(SOURCES) $(OBJ)
+	mkdir -p $(BUILDDIR)
+	rgblink -o $(OUTPUT) $(OBJ)
+	rgbfix -v $(OUTPUT)
+
+$(BUILDDIR)/main.o: $(ASMDIR)/main.asm
+	mkdir -p $/BUILDDIR
+	rgbasm -o $(BUILDDIR)/main.o $(ASMDIR)/main.asm
 clean:
-	rm -rf build
+	rm -f $(OUTPUT)
 
+.PHONY: all clean

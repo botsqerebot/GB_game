@@ -1,4 +1,5 @@
 include "include/hardware.inc"
+include "src/utils/memcopy.asm"
 
 DEF BRICK_LEFT EQU $05
 DEF BRICK_RIGHT EQU $06
@@ -248,19 +249,6 @@ Right:
 	ld [_OAMRAM + 1], a
 	jp Main
 
-;copy bytes from one area to another
-;@param de: source
-;@param hl: Destination
-;param bc: Lenght
-Memcopy:
-	ld a, [de]
-	ld [hli], a
-	inc de
-	dec bc
-	ld a, b	
-	or a, c
-	jp nz, Memcopy
-	ret
 
 UpdateKeys:
 	;Poll half the controller
