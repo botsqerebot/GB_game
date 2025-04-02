@@ -54,6 +54,9 @@
 IF __RGBDS_MAJOR__ == 0 && __RGBDS_MINOR__ < 5
     FAIL "This version of 'hardware.inc' requires RGBDS version 0.5.0 or later."
 ENDC
+IF __RGBDS_MAJOR__ == 0 && __RGBDS_MINOR__ > 9
+    WARN "This version of 'hardware.inc' has not been tested with RGBDS versions beyond 0.9.x."
+ENDC
 
 ; If all of these are already defined, don't do it again.
 

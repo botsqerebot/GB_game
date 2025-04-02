@@ -1,6 +1,7 @@
 include "src/include/hardware.inc"
 include "src/utils/memcopy.asm"
 include "src/utils/input.asm"
+;include "src/assets/tiles.asm"
 
 DEF BRICK_LEFT EQU $05
 DEF BRICK_RIGHT EQU $06

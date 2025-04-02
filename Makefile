@@ -1,4 +1,6 @@
 # Makefile for GB_game project
+#PROJECTNAME = YFFPRO
+#SRCDIR = src
 
 ASMDIR := src
 BUILDDIR := build
@@ -10,6 +12,7 @@ SOURCES = $(ASMDIR)/main.asm \
            $(ASMDIR)/include/hardware.inc \
            $(ASMDIR)/utils/memcopy.asm \
            $(ASMDIR)/utils/input.asm \
+#		   $(ASMDIR)/assets/tiles.asm
 
 
 # Build rules
@@ -21,7 +24,6 @@ $(OUTPUT): $(SOURCES) $(OBJ)
 	rgbfix -v $(OUTPUT)
 
 $(BUILDDIR)/main.o: $(ASMDIR)/main.asm
-	mkdir -p $/BUILDDIR
 	rgbasm -o $(BUILDDIR)/main.o $(ASMDIR)/main.asm
 clean:
 	rm -f $(OUTPUT)
